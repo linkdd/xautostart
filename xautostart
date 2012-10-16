@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from xdg.BaseDirectory import xdg_config_home, xdg_config_dirs
+from xdg.DesktopEntry import DesktopEntry, ValidationError
+
+import os
+import glob
+from subprocess import Popen
+
+class Autostart(object):
+    """ Object which read autostart directory and run all applications """
+
+    def __init__(self):
+        self.entries = []
+        filenames = []
+
+        # search desktop entries in every XDG Configuration Directories
+        for d in xdg_config_dirs:
+            dirname = os.path.join(d, 'autostart')
+
+            # If the folder 'autostart' doesn't exist, pass to the next directory
+            if not os.path.exists(dirname):
+                continue
+
+            # List all desktop entries
+            for path in glob.glob(os.path.join(dirname, '*.desktop')):
+                filename = os.path.basename(path)
+
+                # If there is already a Desktop Entry named like that, ignore it
+                if filename not in filenames:
+                    filenames.append(filename)
+
+                    # Parse Desktop Entry
+                    entry = DesktopEntry(filename=path)
+
+                    # If the Desktop Entry isn't valid, print an error and ignore it
+                    try:
+                        entry.validate()
+                    except ValidationError as e:
+                        print "={{!!}}= Can't validate entry '{0}': {1}".format(path, e)
+                        continue
+
+                    # Add the Desktop Entry to the list
+                    self.entries.append(entry)
+
+    def run(self):
+        # Execute each Desktop Entries
+        for e in self.entries:
+            pid = Popen(['/bin/sh', '-c', e.getExec()]).pid
+            print '=[{0}]= Running {1}'.format(pid, e.getName())
+
+if __name__ == "__main__":
+    autostart = Autostart()
+    autostart.run()
