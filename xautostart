@@ -47,7 +47,13 @@ class Autostart(object):
     def run(self):
         # Execute each Desktop Entries
         for e in self.entries:
-            pid = Popen(['/bin/sh', '-c', e.getExec()]).pid
+            if e.getTerminal():
+                cmd = ['/usr/bin/x-terminal-emulator', '-e', e.getExec()]
+            else:
+                cmd = ['/bin/sh', '-c', e.getExec()]
+
+            pid = Popen(cmd).pid
+
             print '=[{0}]= Running {1}'.format(pid, e.getName())
 
 if __name__ == "__main__":
